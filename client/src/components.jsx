@@ -83,7 +83,14 @@ export function UpstreamCell({ name, upstream, ahead, behind, gone, merged, remo
       </div>
     );
   }
-  return <span className="chip chip-muted">local only</span>;
+  return (
+    <div className="stack">
+      <span className="chip chip-muted" title="Never pushed: no upstream and no remote branch with this name">
+        local only
+      </span>
+      {merged && merged !== 'not-merged' && <span className="small merged-text">{MERGED_LABEL[merged]}</span>}
+    </div>
+  );
 }
 
 export function StatusChips({ wt }) {

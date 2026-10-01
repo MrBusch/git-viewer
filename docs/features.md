@@ -36,7 +36,7 @@ Click a row that has changes to expand it. The expanded row lists the changed fi
 - **Pull ↓N** fast-forwards the branch to its upstream. It never creates a merge commit, and it's offered only when the branch has no commits of its own.
 - **Switch…** switches the worktree to another local branch. A branch that's checked out in another worktree can't be picked.
 - **Open in main…** checks out this worktree's branch in the main folder. See [Open a worktree's branch in the main folder](#open-a-worktrees-branch-in-the-main-folder).
-- **Clean up…** appears when the upstream is gone. See [Clean up merged branches](#clean-up-merged-branches).
+- **Clean up…** appears when the upstream is gone or the branch was never pushed. See [Clean up merged branches](#clean-up-merged-branches).
 - **Copy path** copies the worktree's folder path.
 
 ## Changed files
@@ -87,7 +87,12 @@ While a branch is open in the main folder, a banner at the top of the repository
 
 ## Clean up merged branches
 
-**Clean up…** appears on branches whose remote branch was deleted. Under **upstream gone**, Git Viewer shows whether the work landed in the default branch:
+**Clean up…** appears on two kinds of branches:
+
+- Branches whose remote branch was deleted. They show **upstream gone**. Git notices the deletion when you click **Fetch**, which prunes deleted remote branches.
+- Branches that were never pushed. They have no upstream and no remote branch with the same name, and show **local only**.
+
+For both, Git Viewer checks whether the work landed in the default branch:
 
 - **merged ✓**: the branch's commits are in the default branch.
 - **squash-merged ✓**: a commit in the default branch has the same combined change, as a GitHub squash merge produces.

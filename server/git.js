@@ -311,8 +311,10 @@ async function repoDetail(repo) {
       const match = remoteInfo.remotes.map((r) => `${r}/${b.name}`).find((n) => remoteNames.has(n));
       if (match) b.remoteMatch = { name: match, ...(await aheadBehind(match, b.name)) };
     }
-    // Upstream deleted: check whether the work landed, so it can be cleaned up safely.
-    if (b.gone && base) b.merged = await mergedState(repo.path, base.remoteRef || base.ref, b.name);
+    // Never pushed: no upstream and no remote branch with the same name.
+    b.neverPushed = !b.upstream && !b.remoteMatch;
+    // Upstream deleted or never pushed: check whether the work landed, so it can be cleaned up safely.
+    if ((b.gone || b.neverPushed) && base && b.name !== base.name) b.merged = await mergedState(repo.path, base.remoteRef || base.ref, b.name);
   });
 
   // Which local branch (if any) tracks each remote branch.

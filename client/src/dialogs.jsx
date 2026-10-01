@@ -404,7 +404,22 @@ export function CleanupDialog({ repo, branch, onClose, run }) {
       }
     >
       <p className={merged === 'not-merged' ? 'warn-box' : 'ok-box'}>
-        The remote branch <span className="mono">{branch.upstream}</span> was deleted. {MERGE_NOTE[merged](target)}
+        {branch.neverPushed ? (
+          <>
+            This branch was never pushed.{' '}
+            {merged === 'not-merged' ? (
+              <>
+                Its work isn't in <span className="mono">{target}</span>, and its commits exist only on this machine. Deleting the branch loses them.
+              </>
+            ) : (
+              MERGE_NOTE[merged](target)
+            )}
+          </>
+        ) : (
+          <>
+            The remote branch <span className="mono">{branch.upstream}</span> was deleted. {MERGE_NOTE[merged](target)}
+          </>
+        )}
       </p>
 
       {wt && (

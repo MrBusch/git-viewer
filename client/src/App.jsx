@@ -374,12 +374,12 @@ function WorktreesTable({ repo, run, busy, openDialog }) {
                       Pull ↓{b.behind}
                     </button>
                   )}
-                  {!wt.isMain && b?.gone && (
+                  {!wt.isMain && (b?.gone || b?.neverPushed) && (
                     <button className="btn btn-sm btn-danger-ghost" disabled={busy} onClick={() => openDialog({ type: 'cleanup', branch: b })} title="Delete this worktree and its branch">
                       Clean up…
                     </button>
                   )}
-                  {!wt.isMain && wt.branch && !b?.gone && (
+                  {!wt.isMain && wt.branch && !b?.gone && !(b?.neverPushed && b.merged !== 'not-merged') && (
                     <button className="btn btn-sm" disabled={busy} onClick={() => openDialog({ type: 'open-in-main', branch: wt.branch })} title="Check this branch out in the main repo">
                       Open in main…
                     </button>
@@ -456,12 +456,12 @@ function LocalBranchesTable({ repo, run, busy, openDialog }) {
                         Track
                       </button>
                     )}
-                    {b.gone && b.worktree !== repo.worktrees[0].path && (
+                    {(b.gone || b.neverPushed) && b.name !== repo.defaultBranch && b.worktree !== repo.worktrees[0].path && (
                       <button className="btn btn-sm btn-danger-ghost" disabled={busy} onClick={() => openDialog({ type: 'cleanup', branch: b })}>
                         Clean up…
                       </button>
                     )}
-                    {b.worktree && b.worktree !== repo.worktrees[0].path && !b.gone && (
+                    {b.worktree && b.worktree !== repo.worktrees[0].path && !b.gone && !(b.neverPushed && b.merged !== 'not-merged') && (
                       <button className="btn btn-sm" disabled={busy} onClick={() => openDialog({ type: 'open-in-main', branch: b.name })}>
                         Open in main…
                       </button>
