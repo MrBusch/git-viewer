@@ -92,14 +92,36 @@ To add repositories the scan doesn't find, use one of these:
 
 - **Clone a new repository.** Click **+ Add** in the sidebar, keep **Clone from URL** selected, and paste the repository's URL. Git Viewer clones it into your home folder by default and opens it when the clone finishes.
 - **Add a repository that's already on disk.** Click **+ Add**, choose **Add existing folder**, and enter its path, for example `~/code/my-project`. Git Viewer remembers it. To hide it again, open it and click **Remove from list**. Its files stay where they are.
-- **Scan other folders.** If you keep all your repositories in one place, start the app with that folder in `GIT_VIEWER_ROOTS`. Separate several folders with colons:
+- **Scan other folders.** If you keep your repositories in one place, list that folder under `roots` in `~/.git-viewer/config.json`. Create the file if it doesn't exist yet:
 
-  ```bash
-  ./stop.sh
-  GIT_VIEWER_ROOTS=~/code:~/work ./start.sh
+  ```json
+  {
+    "roots": ["~/code", "~/work"]
+  }
   ```
 
+  Restart the app with `./stop.sh` and `./start.sh` to apply the change. The `roots` list replaces the default, so add `"~"` to keep scanning your home folder. To try other folders for one run without editing the file, start the app with `GIT_VIEWER_ROOTS=~/code:~/work ./start.sh`.
+
 Worktrees don't need adding. A repository's worktrees appear under it wherever they are on disk.
+
+## Move your setup to a new machine
+
+Your Git Viewer setup is one file, `~/.git-viewer/config.json`. It holds your scan folders and the repositories you added by hand. Your repositories, git identity, and GitHub access aren't part of it.
+
+1. On the new machine, follow [Set up git and GitHub access](#set-up-git-and-github-access) and [Install and start Git Viewer](#install-and-start-git-viewer).
+
+2. Copy the config file from the old machine. For example, over SSH:
+
+   ```bash
+   mkdir -p ~/.git-viewer
+   scp OLD-MACHINE:.git-viewer/config.json ~/.git-viewer/config.json
+   ```
+
+3. Put your repositories at the same paths as on the old machine. Clone them again, or copy their folders. Paths in your home folder are saved as `~/…`, so they work even if your user name is different. Git Viewer skips listed repositories that don't exist yet, and shows them once they do.
+
+4. Restart the app with `./stop.sh` and `./start.sh`.
+
+Don't copy `~/.git-viewer/discarded/`. It holds short-lived backups of discarded files from the old machine. The **Open in main** state in the config file resets on its own when the new machine's repositories don't match it.
 
 ## Fix common problems
 

@@ -3,6 +3,7 @@ const os = require('os');
 const path = require('path');
 
 // Local state that git itself doesn't record:
+// - roots:      folders to scan for repositories (GIT_VIEWER_ROOTS overrides them)
 // - extraRepos: repositories added by hand (outside the scanned folders)
 // - mainLinks:  { [repoPath]: { mode, branch, from, previousBranch } } when a worktree's branch is open in the main repo
 // Per-user state lives in ~/.git-viewer, never in the project folder.
@@ -15,21 +16,28 @@ if (!process.env.GIT_VIEWER_CONFIG && fs.existsSync(LEGACY_PATH) && !fs.existsSy
   fs.renameSync(LEGACY_PATH, CONFIG_PATH);
 }
 
+// Paths under the home folder are stored as "~/…", so the file works for another user name.
+const toStored = (p) => (p === os.homedir() || p.startsWith(os.homedir() + path.sep) ? '~' + p.slice(os.homedir().length) : p);
+const fromStored = (p) => path.resolve(p.replace(/^~(?=$|\/)/, os.homedir()));
+
 function readConfig() {
   try {
     const c = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
     return {
-      extraRepos: Array.isArray(c.extraRepos) ? c.extraRepos : [],
+      roots: Array.isArray(c.roots) ? c.roots.filter((r) => typeof r === 'string').map(fromStored) : [],
+      extraRepos: Array.isArray(c.extraRepos) ? c.extraRepos.filter((r) => typeof r === 'string').map(fromStored) : [],
       mainLinks: c.mainLinks && typeof c.mainLinks === 'object' ? c.mainLinks : {},
     };
   } catch {
-    return { extraRepos: [], mainLinks: {} };
+    return { roots: [], extraRepos: [], mainLinks: {} };
   }
 }
 
 function writeConfig(config) {
   fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
+  const stored = { ...config, roots: config.roots.map(toStored), extraRepos: config.extraRepos.map(toStored) };
+  if (!stored.roots.length) delete stored.roots;
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(stored, null, 2) + '\n');
 }
 
 function addExtraRepo(repoPath) {

@@ -99,7 +99,7 @@ Git Viewer stores nothing in its own folder. Each user's state lives in their ho
 
 | Path | Holds |
 | --- | --- |
-| `~/.git-viewer/config.json` | Repositories added by hand, and branches open in the main folder. |
+| `~/.git-viewer/config.json` | Scan folders (`roots`), repositories added by hand (`extraRepos`), and branches open in the main folder (`mainLinks`). Paths in your home folder are saved as `~/…`. |
 | `~/.git-viewer/discarded/` | Backups of discarded files, kept for 7 days. |
 
 ## Settings
@@ -109,6 +109,6 @@ Set these environment variables when you run `./start.sh`:
 | Variable | Default | Effect |
 | --- | --- | --- |
 | `PORT` | `3024` | Port the app listens on. |
-| `GIT_VIEWER_ROOTS` | your home folder | Folders to scan for repositories, separated by colons. |
+| `GIT_VIEWER_ROOTS` | `roots` in the config file, else your home folder | Folders to scan for repositories, separated by colons. Overrides `roots`. |
 | `GIT_VIEWER_CONFIG` | `~/.git-viewer/config.json` | Path of the config file. |
 | `GIT_VIEWER_BACKUPS` | `~/.git-viewer/discarded` | Folder for discard backups. |

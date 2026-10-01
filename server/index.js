@@ -5,13 +5,16 @@ const path = require('path');
 const { git, worktreeStatus, mergedState, defaultBranch, commitDetail, worktreeChanges, discoverRepos, repoSummary, repoDetail, listWorktrees, localBranches, remoteBranches, isValidBranchName, mapLimit } = require('./git');
 
 const { fileDiff, discardChange, undoDiscard, pruneBackups } = require('./files');
+
 const { readConfig, addExtraRepo, removeExtraRepo, getMainLink, setMainLink } = require('./config');
 
 const PORT = Number(process.env.PORT) || 3024;
 const HOST = '127.0.0.1';
 
-// Folders scanned (one level deep) for repositories. Override with GIT_VIEWER_ROOTS=dir1:dir2
-const ROOTS = (process.env.GIT_VIEWER_ROOTS || os.homedir())
+// Folders scanned (one level deep) for repositories: GIT_VIEWER_ROOTS=dir1:dir2, else "roots" in the
+// config file, else the home folder.
+const configRoots = readConfig().roots;
+const ROOTS = (process.env.GIT_VIEWER_ROOTS || (configRoots.length ? configRoots.join(':') : os.homedir()))
   .split(':')
   .filter(Boolean)
   .map((r) => path.resolve(r.replace(/^~(?=$|\/)/, os.homedir())));
