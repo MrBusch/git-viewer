@@ -4,6 +4,8 @@ Git Viewer is a small web app that runs on your machine and shows your local git
 
 It runs your own `git` on your own machine. Nothing leaves your laptop, and there is no account to create.
 
+![The Worktrees tab of a repository. It lists five worktrees with their branches, uncommitted changes, and ahead and behind counts. One row is expanded to show its changed files.](docs/screenshots/worktrees.png)
+
 For a full list of what each screen shows and does, see [Features](docs/features.md).
 
 ## Before you start
@@ -146,5 +148,7 @@ Run `npm run dev` for live reload. The API runs on port 3024 and the front end o
 
 - `server/` is an Express app. It runs git commands and returns the results as JSON.
 - `client/` is a React app, built with Vite.
+
+To update the screenshots in `docs/screenshots/` after a UI change, run `scripts/screenshots/run.sh`. It builds made-up demo repositories in a temporary folder, so no real data ends up in the images. It needs Google Chrome.
 
 The server listens on 127.0.0.1 only and rejects requests from other websites. It runs git without a shell. Before it acts on a branch name, worktree path, or file path, it checks the value against git's own lists.

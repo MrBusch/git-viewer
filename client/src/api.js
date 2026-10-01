@@ -12,6 +12,7 @@ async function request(method, url, body) {
 const repoUrl = (name) => `/api/repos/${encodeURIComponent(name)}`;
 
 export const api = {
+  meta: () => request('GET', '/api/meta'),
   repos: () => request('GET', '/api/repos'),
   clone: (url, parentDir, folderName) => request('POST', '/api/clone', { url, parentDir, folderName }),
   addExisting: (path) => request('POST', '/api/add-existing', { path }),

@@ -183,6 +183,9 @@ app.get(
 
 const GROUPS = ['staged', 'unstaged', 'untracked', 'conflicted'];
 
+// Small facts the standalone file view needs without loading every repository.
+app.get('/api/meta', (req, res) => res.json({ home: os.homedir() }));
+
 app.get(
   '/api/repos/:name/diff',
   wrap(async (req, res) => {

@@ -41,6 +41,8 @@ Click a row that has changes to expand it. The expanded row lists the changed fi
 
 ## Changed files
 
+![The file view. It shows the diff of one changed file, with old and new line numbers, removed lines in red, and added lines in green.](screenshots/file-diff.png)
+
 - Click a file name to open its diff in a new browser tab. **Changes** shows the changed lines with three lines of context. **Full file** shows the whole file with the changes highlighted. A new file shows as all added lines.
 - **Discard** asks for a second click within 3 seconds, then:
 
@@ -65,6 +67,8 @@ One row per local branch, newest first. The columns match the Worktrees tab. Und
 ## Remote branches tab
 
 One row per remote branch, newest first.
+
+![The Remote branches tab. It lists remote branches with the local branch that tracks each one, and a Check out button for branches you don't have locally.](screenshots/remote-branches.png)
 
 - The filter box matches branch names and authors.
 - **Hide ones I have locally** hides remote branches that a local branch tracks or shares a name with.

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { api } from './api.js';
 import { ConfirmButton, Toasts, useToasts } from './components.jsx';
 import { DISCARD_HINT, LineCounts, PathLabel } from './details.jsx';
-import { basename, shortPath } from './util.js';
+import { basename, setHome, shortPath } from './util.js';
 
 const GROUP_LABEL = { staged: 'Staged', unstaged: 'Not staged', untracked: 'Untracked', conflicted: 'Conflict' };
 
@@ -19,6 +19,12 @@ export default function FileView() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const { toasts, toast, dismiss } = useToasts();
+  const [, setHomeLoaded] = useState(false);
+
+  // Paths under the home folder show as "~/…", as on the main page.
+  useEffect(() => {
+    api.meta().then((m) => (setHome(m.home), setHomeLoaded(true)), () => {});
+  }, []);
 
   useEffect(() => {
     document.title = `${basename(path || '')} · ${basename(wt || '')}`;
