@@ -1,0 +1,9 @@
+node_modules/
+client/dist/
+*.log
+.DS_Store
+.env
+.env.*
+
+# Per-user state from older versions (now kept in ~/.git-viewer)
+server/config.json

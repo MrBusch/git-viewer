@@ -1,0 +1,11 @@
+{
+  "name": "git-viewer-server",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
