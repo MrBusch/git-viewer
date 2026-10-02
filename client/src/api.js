@@ -34,5 +34,7 @@ export const api = {
     request('GET', `${repoUrl(name)}/diff?worktree=${encodeURIComponent(worktree)}&group=${group}&path=${encodeURIComponent(path)}${full ? '&full=1' : ''}`),
   discard: (name, worktree, group, path) => request('POST', `${repoUrl(name)}/discard`, { worktree, group, path }),
   undoDiscard: (id) => request('POST', '/api/undo-discard', { id }),
+  commitFiles: (name, worktree, paths, message) => request('POST', `${repoUrl(name)}/commit`, { worktree, paths, message }),
+  push: (name, branch) => request('POST', `${repoUrl(name)}/push`, { branch }),
   fastForward: (name, branch) => request('POST', `${repoUrl(name)}/fast-forward`, { branch }),
 };

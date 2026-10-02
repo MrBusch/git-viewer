@@ -12,16 +12,19 @@ const GIT_ENV = {
 };
 
 // Arguments are passed as an array (no shell), so ref names can't inject commands.
-function git(cwd, args, { timeout = 30000 } = {}) {
+// Resolves with stdout, or with { stdout, stderr } when withStderr is set (push reports on stderr).
+function git(cwd, args, { timeout = 30000, withStderr = false } = {}) {
   return new Promise((resolve, reject) => {
     execFile('git', args, { cwd, timeout, env: GIT_ENV, maxBuffer: 32 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err) {
-        const msg = (stderr || '').trim() || (err.killed ? 'git timed out' : err.message);
+        // Hooks and "nothing to commit" report on stdout, so keep both.
+        const out = [stderr, stdout].map((x) => (x || '').trim()).filter(Boolean).join('\n');
+        const msg = out ? out.slice(-4000) : err.killed ? 'git timed out' : err.message;
         const e = new Error(msg);
         e.code = err.code;
         return reject(e);
       }
-      resolve(stdout);
+      resolve(withStderr ? { stdout, stderr } : stdout);
     });
   });
 }
@@ -313,6 +316,8 @@ async function repoDetail(repo) {
     }
     // Never pushed: no upstream and no remote branch with the same name.
     b.neverPushed = !b.upstream && !b.remoteMatch;
+    // A never-pushed branch with no commits of its own was usually just created, not finished.
+    b.noCommits = b.neverPushed && b.base?.ahead === 0;
     // Upstream deleted or never pushed: check whether the work landed, so it can be cleaned up safely.
     if ((b.gone || b.neverPushed) && base && b.name !== base.name) b.merged = await mergedState(repo.path, base.remoteRef || base.ref, b.name);
   });

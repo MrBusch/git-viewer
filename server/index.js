@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const { git, worktreeStatus, mergedState, defaultBranch, commitDetail, worktreeChanges, discoverRepos, repoSummary, repoDetail, listWorktrees, localBranches, remoteBranches, isValidBranchName, mapLimit } = require('./git');
 
+const { commitFiles, pushBranch } = require('./commit');
 const { fileDiff, discardChange, undoDiscard, pruneBackups } = require('./files');
 
 const { readConfig, addExtraRepo, removeExtraRepo, getMainLink, setMainLink } = require('./config');
@@ -209,6 +210,28 @@ app.post(
     const undoId = await discardChange(wt.path, group, file);
     const what = { unstaged: 'unstaged changes to', staged: 'all changes to', untracked: 'new file' }[group];
     res.json({ ok: true, message: `Discarded ${what} ${file}`, undoId });
+  })
+);
+
+app.post(
+  '/api/repos/:name/commit',
+  wrap(async (req, res) => {
+    const repo = findRepo(req.params.name);
+    const { wt } = await findWorktree(repo, req.body.worktree);
+    const r = await commitFiles(wt, req.body.paths, req.body.message);
+    res.json({ ok: true, message: `Committed ${r.count} file${r.count > 1 ? 's' : ''} to ${r.branch} (${r.hash})`, branch: r.branch, hash: r.hash });
+  })
+);
+
+app.post(
+  '/api/repos/:name/push',
+  wrap(async (req, res) => {
+    const repo = findRepo(req.params.name);
+    const { branch } = req.body;
+    const r = await pushBranch(repo.path, branch);
+    const where = `${r.remote}/${r.target}`;
+    const message = r.upToDate ? `${where} is already up to date` : r.setUpstream ? `Pushed ${branch} to ${where} and set it as upstream` : `Pushed ${branch} to ${where}`;
+    res.json({ ok: true, message, prUrl: r.prUrl });
   })
 );
 

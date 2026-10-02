@@ -161,9 +161,12 @@ export function PathLabel({ path: file }) {
 
 export { LineCounts, STATUS_CLASS, STATUS_LETTER };
 
-function FileRow({ file, group, repoName, wt, run, busy }) {
+function FileRow({ file, group, repoName, wt, run, busy, selectable, checked, onToggle }) {
   return (
     <li className="file-row">
+      {selectable && (
+        <input type="checkbox" className="file-check" checked={checked} onChange={() => onToggle(file.path)} disabled={busy} aria-label={`Select ${file.path}`} />
+      )}
       <span className={`st ${STATUS_CLASS[file.status] || 'st-mod'}`} title={file.status}>
         {STATUS_LETTER[file.status] || '?'}
       </span>
@@ -191,16 +194,41 @@ export const DISCARD_HINT = {
   untracked: 'Delete this new file',
 };
 
+
+// Why this worktree can't commit right now, or null.
+function commitBlocker(wt, changes) {
+  if (!wt.branch) return "This worktree isn't on a branch (detached), so commits would belong to no branch. Switch it to a branch to commit.";
+  if (wt.operation) return `A ${wt.operation} is in progress. Finish it in a terminal before committing here.`;
+  if (changes.conflicted.length) return 'Resolve the conflicted files before committing.';
+  return null;
+}
+
 export function ChangedFiles({ repoName, wt, run, busy }) {
   const [changes, setChanges] = useState(null);
   const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(() => new Set());
+  const [message, setMessage] = useState('');
+  const seeded = useRef(false);
   // Re-fetch when the worktree's status summary changes (after a refresh).
   const statusKey = JSON.stringify(wt.status);
 
   useEffect(() => {
     let live = true;
     api.changes(repoName, wt.path).then(
-      (c) => live && (setChanges(c), setError(null)),
+      (c) => {
+        if (!live) return;
+        setChanges(c);
+        setError(null);
+        const present = new Set([...c.staged, ...c.unstaged, ...c.untracked].map((f) => f.path));
+        setSelected((prev) => {
+          // Start with what's already staged; afterwards keep the choice, minus files that are gone.
+          if (!seeded.current) {
+            seeded.current = true;
+            return new Set(c.staged.map((f) => f.path));
+          }
+          return new Set([...prev].filter((p) => present.has(p)));
+        });
+      },
       (e) => live && setError(e.message)
     );
     return () => {
@@ -214,15 +242,49 @@ export function ChangedFiles({ repoName, wt, run, busy }) {
   const groups = GROUPS.filter(([key]) => changes[key].length);
   if (!groups.length) return <div className="changes dim">No changes.</div>;
 
+  const canCommit = !!run;
+  const blocker = canCommit ? commitBlocker(wt, changes) : null;
+  const selectable = canCommit && !blocker;
+
+  const toggle = (p) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(p) ? next.delete(p) : next.add(p);
+      return next;
+    });
+  const toggleGroup = (files, on) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const f of files) on ? next.add(f.path) : next.delete(f.path);
+      return next;
+    });
+
+  const count = selected.size;
+  const commit = () => {
+    if (!count || !message.trim()) return;
+    run(
+      () => api.commitFiles(repoName, wt.path, [...selected], message),
+      () => {
+        setMessage('');
+        setSelected(new Set());
+      }
+    );
+  };
+
   return (
     <div className="changes">
       {groups.map(([key, label]) => {
         const files = changes[key];
         const added = files.reduce((n, f) => n + (f.added || 0), 0);
         const removed = files.reduce((n, f) => n + (f.removed || 0), 0);
+        const groupSelectable = selectable && key !== 'conflicted';
+        const allOn = files.every((f) => selected.has(f.path));
         return (
           <section key={key} className="change-group">
             <h4>
+              {groupSelectable && (
+                <input type="checkbox" className="file-check" checked={allOn} onChange={() => toggleGroup(files, !allOn)} disabled={busy} aria-label={`Select all ${label.toLowerCase()} files`} />
+              )}
               {label} <span className="count">{files.length}</span>
               {(added > 0 || removed > 0) && (
                 <span className="group-total">
@@ -232,12 +294,49 @@ export function ChangedFiles({ repoName, wt, run, busy }) {
             </h4>
             <ul>
               {files.map((f) => (
-                <FileRow key={f.path} file={f} group={key} repoName={repoName} wt={wt} run={run} busy={busy} />
+                <FileRow
+                  key={f.path}
+                  file={f}
+                  group={key}
+                  repoName={repoName}
+                  wt={wt}
+                  run={run}
+                  busy={busy}
+                  selectable={groupSelectable}
+                  checked={selected.has(f.path)}
+                  onToggle={toggle}
+                />
               ))}
             </ul>
           </section>
         );
       })}
+
+      {canCommit && blocker && <p className="commit-note dim small">{blocker}</p>}
+      {selectable && (
+        <div className="commit-box">
+          <textarea
+            className="input commit-message"
+            rows={2}
+            placeholder={`Commit message for ${wt.branch}`}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) commit();
+            }}
+            disabled={busy}
+          />
+          <div className="commit-actions">
+            <span className="dim small">
+              Commits the checked files as they are on disk. Other staged files stay staged. <kbd>⌘</kbd>
+              <kbd>↵</kbd>
+            </span>
+            <button className="btn btn-primary btn-sm" disabled={busy || !count || !message.trim()} onClick={commit}>
+              {count ? `Commit ${count} file${count > 1 ? 's' : ''}` : 'Commit'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

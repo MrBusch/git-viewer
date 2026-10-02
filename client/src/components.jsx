@@ -47,7 +47,7 @@ function upstreamLabel(upstream, branch) {
 
 const MERGED_LABEL = { merged: 'merged ✓', 'squash-merged': 'squash-merged ✓', 'not-merged': 'not merged' };
 
-export function UpstreamCell({ name, upstream, ahead, behind, gone, merged, remoteMatch }) {
+export function UpstreamCell({ name, upstream, ahead, behind, gone, merged, remoteMatch, noCommits }) {
   if (upstream && gone) {
     return (
       <div className="stack">
@@ -88,7 +88,11 @@ export function UpstreamCell({ name, upstream, ahead, behind, gone, merged, remo
       <span className="chip chip-muted" title="Never pushed: no upstream and no remote branch with this name">
         local only
       </span>
-      {merged && merged !== 'not-merged' && <span className="small merged-text">{MERGED_LABEL[merged]}</span>}
+      {noCommits ? (
+        <span className="small dim">no commits yet</span>
+      ) : (
+        merged && merged !== 'not-merged' && <span className="small merged-text">{MERGED_LABEL[merged]}</span>
+      )}
     </div>
   );
 }

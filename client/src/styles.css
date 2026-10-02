@@ -1239,3 +1239,48 @@ a.file-path:hover {
 .diff tr:first-child.diff-hunk td {
   border-top-left-radius: 10px;
 }
+
+/* ─── Commit ─────────────────────────────────────────────── */
+
+.file-check {
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.change-group h4 .file-check {
+  margin-right: 2px;
+}
+
+.commit-box {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.commit-message {
+  resize: vertical;
+  min-height: 52px;
+  font: inherit;
+}
+
+.commit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.commit-note {
+  margin: 10px 0 0;
+}
+
+kbd {
+  font-family: var(--mono);
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+  margin-left: 2px;
+}

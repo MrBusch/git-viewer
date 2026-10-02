@@ -96,8 +96,16 @@ export default function App() {
       setBusy(true);
       try {
         const r = await action();
-        const undo = r.undoId ? { label: 'Undo', onClick: () => runRef.current(() => api.undoDiscard(r.undoId)) } : undefined;
-        toast('success', r.message || 'Done', undo);
+        const repoName = selectedRef.current;
+        // Follow-up offered in the toast: undo a discard, push a fresh commit, or open the PR GitHub suggests.
+        const followUp = r.undoId
+          ? { label: 'Undo', onClick: () => runRef.current(() => api.undoDiscard(r.undoId)) }
+          : r.prUrl
+            ? { label: 'Open PR', onClick: () => window.open(r.prUrl, '_blank', 'noopener') }
+            : r.hash && r.branch
+              ? { label: 'Push', onClick: () => runRef.current(() => api.push(repoName, r.branch)) }
+              : undefined;
+        toast('success', r.message || 'Done', followUp);
         after?.(r);
       } catch (e) {
         toast('error', e.message);
@@ -252,6 +260,51 @@ function RepoView({ repo, tab, setTab, run, busy, refresh, loading, openDialog }
   );
 }
 
+// Clean up is offered for branches whose remote was deleted, and for never-pushed ones that
+// aren't a freshly started branch in a worktree.
+function canCleanUp(b) {
+  if (!b) return false;
+  if (b.gone) return true;
+  return b.neverPushed && !(b.noCommits && b.worktree);
+}
+
+// A never-pushed branch whose work isn't merged anywhere is probably in progress.
+const looksFinished = (b) => b?.neverPushed && !b.noCommits && b.merged !== 'not-merged';
+
+// ─── Push ─────────────────────────────────────────────────────────────────────
+
+// What a push of this branch would send, or null when there's nothing sensible to push.
+function pushInfo(b) {
+  if (!b || b.gone) return null;
+  if (b.upstream) return b.ahead > 0 && b.behind === 0 ? { label: `Push ↑${b.ahead}`, title: `Push ${b.ahead} commit(s) to ${b.upstream}` } : null;
+  if (b.remoteMatch) {
+    const { ahead, behind, name } = b.remoteMatch;
+    return ahead > 0 && behind === 0 ? { label: `Push ↑${ahead}`, title: `Push to ${name} and track it` } : null;
+  }
+  if (b.neverPushed && b.base?.ahead > 0) return { label: 'Push', title: 'Push this branch for the first time and track it' };
+  return null;
+}
+
+function PushButton({ repo, branch, run, busy }) {
+  const info = pushInfo(branch);
+  if (!info) return null;
+  const isDefault = branch.name === repo.defaultBranch;
+  return (
+    <button
+      className="btn btn-sm"
+      disabled={busy}
+      title={info.title}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (isDefault && !window.confirm(`Push directly to ${branch.name}?`)) return;
+        run(() => api.push(repo.name, branch.name));
+      }}
+    >
+      {info.label}
+    </button>
+  );
+}
+
 // ─── Main-repo link banner ────────────────────────────────────────────────────
 
 function MainLinkBanner({ repo, run, busy }) {
@@ -369,17 +422,18 @@ function WorktreesTable({ repo, run, busy, openDialog }) {
                   <CommitCell commit={wt.lastCommit} repoName={repo.name} />
                 </td>
                 <td className="actions" onClick={(e) => e.stopPropagation()}>
+                  <PushButton repo={repo} branch={b} run={run} busy={busy} />
                   {canPull && (
                     <button className="btn btn-sm" disabled={busy} onClick={() => run(() => api.fastForward(repo.name, b.name))} title={`Fast-forward to ${b.upstream}`}>
                       Pull ↓{b.behind}
                     </button>
                   )}
-                  {!wt.isMain && (b?.gone || b?.neverPushed) && (
+                  {!wt.isMain && canCleanUp(b) && (
                     <button className="btn btn-sm btn-danger-ghost" disabled={busy} onClick={() => openDialog({ type: 'cleanup', branch: b })} title="Delete this worktree and its branch">
                       Clean up…
                     </button>
                   )}
-                  {!wt.isMain && wt.branch && !b?.gone && !(b?.neverPushed && b.merged !== 'not-merged') && (
+                  {!wt.isMain && wt.branch && !b?.gone && !looksFinished(b) && (
                     <button className="btn btn-sm" disabled={busy} onClick={() => openDialog({ type: 'open-in-main', branch: wt.branch })} title="Check this branch out in the main repo">
                       Open in main…
                     </button>
@@ -446,6 +500,7 @@ function LocalBranchesTable({ repo, run, busy, openDialog }) {
                     <CommitCell commit={b.lastCommit} repoName={repo.name} />
                   </td>
                   <td className="actions">
+                    <PushButton repo={repo} branch={b} run={run} busy={busy} />
                     {canFF && (
                       <button className="btn btn-sm" disabled={busy} onClick={() => run(() => api.fastForward(repo.name, b.name))} title={`Fast-forward to ${b.upstream}`}>
                         Pull ↓{b.behind}
@@ -456,12 +511,12 @@ function LocalBranchesTable({ repo, run, busy, openDialog }) {
                         Track
                       </button>
                     )}
-                    {(b.gone || b.neverPushed) && b.name !== repo.defaultBranch && b.worktree !== repo.worktrees[0].path && (
+                    {canCleanUp(b) && b.name !== repo.defaultBranch && b.worktree !== repo.worktrees[0].path && (
                       <button className="btn btn-sm btn-danger-ghost" disabled={busy} onClick={() => openDialog({ type: 'cleanup', branch: b })}>
                         Clean up…
                       </button>
                     )}
-                    {b.worktree && b.worktree !== repo.worktrees[0].path && !b.gone && !(b.neverPushed && b.merged !== 'not-merged') && (
+                    {b.worktree && b.worktree !== repo.worktrees[0].path && !b.gone && !looksFinished(b) && (
                       <button className="btn btn-sm" disabled={busy} onClick={() => openDialog({ type: 'open-in-main', branch: b.name })}>
                         Open in main…
                       </button>

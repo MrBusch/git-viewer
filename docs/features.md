@@ -2,7 +2,7 @@
 
 This page lists what Git Viewer shows and what each action does. To install the app, see the [README](../README.md).
 
-Git Viewer never commits, pushes, or resets. It deletes files or branches only through **Discard** and **Clean up**, after you confirm.
+Git Viewer commits only the files you check and pushes only when you click **Push**. It never force-pushes or resets. It deletes files or branches only through **Discard** and **Clean up**, after you confirm.
 
 ## Sidebar
 
@@ -33,6 +33,7 @@ Click a row that has changes to expand it. The expanded row lists the changed fi
 
 ### Actions on a worktree
 
+- **Push ↑N** pushes the branch's new commits. See [Commit and push](#commit-and-push).
 - **Pull ↓N** fast-forwards the branch to its upstream. It never creates a merge commit, and it's offered only when the branch has no commits of its own.
 - **Switch…** switches the worktree to another local branch. A branch that's checked out in another worktree can't be picked.
 - **Open in main…** checks out this worktree's branch in the main folder. See [Open a worktree's branch in the main folder](#open-a-worktrees-branch-in-the-main-folder).
@@ -55,6 +56,22 @@ Click a row that has changes to expand it. The expanded row lists the changed fi
 
   Before it discards, Git Viewer copies the file to `~/.git-viewer/discarded/`. The message that confirms the discard has an **Undo** button for 12 seconds. Undo puts the content back as an unstaged change. Backups are deleted after 7 days.
 
+## Commit and push
+
+In an expanded worktree row, each changed file has a checkbox, and each group has one that selects all its files. Files that are already staged start out checked.
+
+To commit, check the files, write a message, and click **Commit N files**, or press ⌘↵. Git Viewer commits the checked files as they are on disk, including new and deleted files. Staged files you didn't check stay staged and aren't part of the commit. Your repository's commit hooks run as usual. If a hook fails, its output appears and nothing is committed.
+
+Committing isn't possible in these cases, and the panel says why:
+
+- The worktree isn't on a branch (detached), for example the main folder while it's testing a copy.
+- A merge, rebase, cherry-pick, or revert is in progress.
+- A file has conflicts.
+
+**Push ↑N** appears on a branch with commits its remote branch doesn't have. A branch that was never pushed shows **Push**, which also sets its upstream. After a commit, the confirmation message offers **Push** too. When GitHub replies with a link to open a pull request, the message offers **Open PR**.
+
+Git Viewer never force-pushes. If the remote branch has commits you don't have, the push is rejected and you pull or rebase in a terminal. Branches whose remote branch was deleted don't offer **Push**, because pushing would bring the deleted branch back. Pushing the default branch asks for confirmation.
+
 ## Local branches tab
 
 One row per local branch, newest first. The columns match the Worktrees tab. Under the branch name, **checked out in** names the worktree that has it.
@@ -62,7 +79,7 @@ One row per local branch, newest first. The columns match the Worktrees tab. Und
 - **not tracked** means a remote branch with the same name exists, but the local branch doesn't track it. **Track** sets it as the upstream.
 - An upstream with a different name than the branch is shown in full, for example `→ origin/master`.
 - **Check out…** checks out the branch in an existing worktree or in a new one.
-- **Pull ↓N**, **Open in main…**, and **Clean up…** work as on the Worktrees tab.
+- **Push ↑N**, **Pull ↓N**, **Open in main…**, and **Clean up…** work as on the Worktrees tab.
 
 ## Remote branches tab
 
@@ -90,7 +107,7 @@ While a branch is open in the main folder, a banner at the top of the repository
 **Clean up…** appears on two kinds of branches:
 
 - Branches whose remote branch was deleted. They show **upstream gone**. Git notices the deletion when you click **Fetch**, which prunes deleted remote branches.
-- Branches that were never pushed. They have no upstream and no remote branch with the same name, and show **local only**.
+- Branches that were never pushed. They have no upstream and no remote branch with the same name, and show **local only**. A never-pushed branch without commits of its own shows **no commits yet**. It gets **Clean up…** only when no worktree has it checked out, because a worktree with such a branch is usually work that just started.
 
 For both, Git Viewer checks whether the work landed in the default branch:
 

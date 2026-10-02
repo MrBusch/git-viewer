@@ -1,6 +1,6 @@
 # Git Viewer
 
-Git Viewer is a small web app that runs on your machine and shows your local git repositories in the browser. For each repository you see its worktrees, local and remote branches, uncommitted changes, and how far each branch is ahead of or behind its upstream and the default branch. From the same page you can switch branches, check out remote branches, preview and discard changes, and delete merged worktrees.
+Git Viewer is a small web app that runs on your machine and shows your local git repositories in the browser. For each repository you see its worktrees, local and remote branches, uncommitted changes, and how far each branch is ahead of or behind its upstream and the default branch. From the same page you can switch branches, check out remote branches, preview, discard, or commit changes, push, and delete merged worktrees.
 
 It runs your own `git` on your own machine. Nothing leaves your laptop, and there is no account to create.
 
