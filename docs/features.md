@@ -82,6 +82,8 @@ Committing isn't possible in these cases, and the panel says why:
 
 **Push ↑N** appears on a branch with commits its remote branch doesn't have. A branch that was never pushed shows **Push**, which also sets its upstream. After a commit, the confirmation message offers **Push** too. When GitHub replies with a link to open a pull request, the message offers **Open PR**.
 
+A branch created from the default branch, for example with `git switch -c my-branch origin/master`, tracks `origin/master`. Git Viewer treats it as never pushed: **Push** creates `origin/my-branch` and makes it the upstream, and never pushes into the default branch. Its pull request is looked up under its own name.
+
 Git Viewer never force-pushes. If the remote branch has commits you don't have, the push is rejected and you pull or rebase in a terminal. Branches whose remote branch was deleted don't offer **Push**, because pushing would bring the deleted branch back. Pushing the default branch asks for confirmation.
 
 ## Local branches tab

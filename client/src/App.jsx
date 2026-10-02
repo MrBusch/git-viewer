@@ -296,7 +296,7 @@ const looksFinished = (b) => b?.neverPushed && !b.noCommits && b.merged !== 'not
 // What a push of this branch would send, or null when there's nothing sensible to push.
 function pushInfo(b) {
   if (!b || b.gone) return null;
-  if (b.upstream) return b.ahead > 0 && b.behind === 0 ? { label: `Push ↑${b.ahead}`, title: `Push ${b.ahead} commit(s) to ${b.upstream}` } : null;
+  if (b.upstream && !b.tracksDefault) return b.ahead > 0 && b.behind === 0 ? { label: `Push ↑${b.ahead}`, title: `Push ${b.ahead} commit(s) to ${b.upstream}` } : null;
   if (b.remoteMatch) {
     const { ahead, behind, name } = b.remoteMatch;
     return ahead > 0 && behind === 0 ? { label: `Push ↑${ahead}`, title: `Push to ${name} and track it` } : null;

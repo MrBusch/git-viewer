@@ -37,7 +37,12 @@ export function PrCell({ prs, branch, isDefault }) {
   const pr = prs.byBranch[branch.name];
   if (!pr) {
     // Pushed and still on the remote, but no PR yet: link to GitHub's compare page.
-    const head = branch.upstream && !branch.gone ? branch.upstream.replace(/^origin\//, '') : branch.remoteMatch ? branch.remoteMatch.name.replace(/^origin\//, '') : null;
+    const head =
+      branch.upstream && !branch.gone && !branch.tracksDefault
+        ? branch.upstream.replace(/^origin\//, '')
+        : branch.remoteMatch
+          ? branch.remoteMatch.name.replace(/^origin\//, '')
+          : null;
     if (!head) return <span className="dim">—</span>;
     return (
       <a className="pr-create" href={`${prs.compareBase}${encodeURIComponent(head).replace(/%2F/g, '/')}?expand=1`} target="_blank" rel="noreferrer">

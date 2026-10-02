@@ -208,6 +208,12 @@ async function defaultBranch(repoPath, localNames) {
   return null;
 }
 
+// True for a non-default branch whose upstream is the default branch on some remote, e.g. origin/master.
+function tracksDefaultBranch(b, base, remotes) {
+  if (!base || !b.upstream || b.name === base.name) return false;
+  return remotes.some((r) => b.upstream === `${r}/${base.name}`);
+}
+
 // Has `branch` landed in `base`? "merged" (its commits are in base), "squash-merged" (a commit in
 // base has the same combined change, as GitHub's squash merge produces) or "not-merged".
 async function mergedState(repoPath, base, branch) {
@@ -309,13 +315,16 @@ async function repoDetail(repo) {
     b.worktree = checkedOutIn.get(b.name) || null;
     // Relative to the default branch.
     if (base && b.name !== base.name) b.base = await aheadBehind(base.ref, b.name);
-    // No upstream configured, but a remote branch with the same name exists: compare against that.
-    if (!b.upstream) {
+    // A feature branch created from origin/master tracks origin/master. Its own work was never pushed
+    // under its own name, so treat it like a branch without an upstream (for PRs, Push, and Clean up).
+    b.tracksDefault = tracksDefaultBranch(b, base, remoteInfo.remotes);
+    // No upstream of its own, but a remote branch with the same name exists: compare against that.
+    if (!b.upstream || b.tracksDefault) {
       const match = remoteInfo.remotes.map((r) => `${r}/${b.name}`).find((n) => remoteNames.has(n));
       if (match) b.remoteMatch = { name: match, ...(await aheadBehind(match, b.name)) };
     }
     // Never pushed: no upstream and no remote branch with the same name.
-    b.neverPushed = !b.upstream && !b.remoteMatch;
+    b.neverPushed = (!b.upstream || b.tracksDefault) && !b.remoteMatch;
     // A never-pushed branch with no commits of its own was usually just created, not finished.
     b.noCommits = b.neverPushed && b.base?.ahead === 0;
     // Upstream deleted or never pushed: check whether the work landed, so it can be cleaned up safely.
@@ -423,4 +432,4 @@ async function isValidBranchName(name) {
   }
 }
 
-module.exports = { git, worktreeStatus, mergedState, defaultBranch, commitDetail, worktreeChanges, discoverRepos, repoSummary, repoDetail, listWorktrees, localBranches, remoteBranches, isValidBranchName, mapLimit };
+module.exports = { tracksDefaultBranch, git, worktreeStatus, mergedState, defaultBranch, commitDetail, worktreeChanges, discoverRepos, repoSummary, repoDetail, listWorktrees, localBranches, remoteBranches, isValidBranchName, mapLimit };

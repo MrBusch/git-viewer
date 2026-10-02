@@ -1,5 +1,5 @@
 const { execFile } = require('child_process');
-const { git, localBranches, defaultBranch } = require('./git');
+const { git, localBranches, defaultBranch, tracksDefaultBranch } = require('./git');
 
 // Pull-request info comes from the GitHub CLI (`gh api graphql`), so it reuses `gh auth login`
 // and the app never handles a token. Results are cached briefly to stay far below rate limits.
@@ -106,9 +106,12 @@ async function repoPullRequests(repoPath, { fresh = false } = {}) {
   const base = await defaultBranch(repoPath, new Set(locals.map((b) => b.name)));
   // The PR's head is the branch name on origin, which can differ from the local name.
   const headFor = new Map();
+  const remotes = (await git(repoPath, ['remote'])).split('\n').filter(Boolean);
   for (const b of locals) {
     if (base && b.name === base.name) continue;
-    if (b.upstream?.startsWith('origin/')) headFor.set(b.name, b.upstream.slice('origin/'.length));
+    // A branch tracking the default branch has no PR under that name (it would match old master PRs).
+    if (tracksDefaultBranch(b, base, remotes)) headFor.set(b.name, b.name);
+    else if (b.upstream?.startsWith('origin/')) headFor.set(b.name, b.upstream.slice('origin/'.length));
     else if (!b.upstream) headFor.set(b.name, b.name); // pushed-but-untracked, or never pushed (simply no PR)
   }
 

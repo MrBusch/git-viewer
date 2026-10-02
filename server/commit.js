@@ -1,5 +1,5 @@
 const path = require('path');
-const { git, worktreeStatus, worktreeChanges, localBranches, remoteBranches } = require('./git');
+const { git, worktreeStatus, worktreeChanges, localBranches, remoteBranches, defaultBranch, tracksDefaultBranch } = require('./git');
 
 const lit = (args) => ['--literal-pathspecs', ...args];
 const LONG = { timeout: 5 * 60 * 1000 }; // hooks can be slow
@@ -54,10 +54,14 @@ async function pushBranch(repoPath, branch) {
   const { remotes, branches } = await remoteBranches(repoPath);
   if (!remotes.length) throw httpError(400, 'This repository has no remote to push to');
 
+  // A feature branch that tracks the default branch (created from origin/master) must not push into it.
+  const base = await defaultBranch(repoPath, new Set(locals.map((l) => l.name)));
+  const ownUpstream = b.upstream && !tracksDefaultBranch(b, base, remotes);
+
   let remote;
   let target;
   let setUpstream = false;
-  if (b.upstream) {
+  if (ownUpstream) {
     remote = remotes.filter((r) => b.upstream.startsWith(r + '/')).sort((x, y) => y.length - x.length)[0];
     if (!remote) throw httpError(400, `Can't tell which remote ${b.upstream} belongs to`);
     target = b.upstream.slice(remote.length + 1);
