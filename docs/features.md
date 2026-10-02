@@ -9,6 +9,7 @@ Git Viewer commits only the files you check and pushes only when you click **Pus
 The sidebar lists every repository Git Viewer knows about, with the branch its main folder is on. If a repository has more than one worktree, a number next to the branch shows how many.
 
 - **+ Add** clones a repository from a URL, or adds a repository that's already on disk. See [Add your repositories](../README.md#add-your-repositories).
+- The switch at the bottom picks the color theme: **Auto** follows your system setting, and **Light** and **Dark** override it. The browser remembers the choice, and open file views follow it.
 
 ## Repository header
 

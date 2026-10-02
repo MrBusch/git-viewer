@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { CopyButton, StatusChips, Toasts, UpstreamCell, useToasts } from './components.jsx';
 import { ChangedFiles, CommitCell } from './details.jsx';
 import { AddRepoDialog, BaseSync, CheckoutRemoteDialog, CleanupDialog, OpenBranchDialog, OpenInMainDialog, SwitchBranchDialog } from './dialogs.jsx';
+import { ThemeSwitch } from './theme.jsx';
 import { basename, fullDate, setHome, shortPath, timeAgo } from './util.js';
 
 // ─── URL hash state: #/<repo>/<tab> ───────────────────────────────────────────
@@ -191,6 +192,7 @@ function Sidebar({ repos, selected, onSelect, onAdd }) {
           </li>
         ))}
       </ul>
+      <ThemeSwitch />
     </nav>
   );
 }

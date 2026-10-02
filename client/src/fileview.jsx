@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { api } from './api.js';
 import { ConfirmButton, Toasts, useToasts } from './components.jsx';
+import { useTheme } from './theme.jsx';
 import { DISCARD_HINT, LineCounts, PathLabel } from './details.jsx';
 import { basename, setHome, shortPath } from './util.js';
 
@@ -19,6 +20,7 @@ export default function FileView() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const { toasts, toast, dismiss } = useToasts();
+  useTheme(); // follows the theme chosen in the main tab
   const [, setHomeLoaded] = useState(false);
 
   // Paths under the home folder show as "~/…", as on the main page.

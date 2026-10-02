@@ -21,7 +21,7 @@ sleep 1
 APP="http://localhost:$PORT"
 WT=$(node -e 'console.log(encodeURIComponent(process.argv[1]))' "$DEMO/home/acme-api-rate-limits")
 mkdir -p "$OUT"
-node "$HERE/capture.mjs" "$APP/#/acme-api/worktrees" "$OUT/worktrees.png" 1400 800 "document.querySelector('tr.expandable').click()"
+node "$HERE/capture.mjs" "$APP/#/acme-api/worktrees" "$OUT/worktrees.png" 1400 1000 "document.querySelector('tr.expandable').click()"
 node "$HERE/capture.mjs" "$APP/#/file?repo=acme-api&wt=$WT&group=unstaged&path=src%2Fratelimit%2Fbucket.ts" "$OUT/file-diff.png" 1100 600
 node "$HERE/capture.mjs" "$APP/#/acme-api/remote" "$OUT/remote-branches.png" 1400 560
 echo "Saved screenshots to $OUT"
