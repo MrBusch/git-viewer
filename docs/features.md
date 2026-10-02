@@ -28,6 +28,7 @@ One row per worktree. The main folder is marked **main**.
 | Changes | Counts of staged, modified, untracked, and conflicted files, or **clean**. Also shows a merge, rebase, cherry-pick, revert, or bisect in progress. |
 | vs upstream | Commits ahead (↑) and behind (↓) the upstream branch. **upstream gone** means the remote branch was deleted. |
 | vs default | Commits ahead and behind the default branch, for example `master`. |
+| Pull request | The branch's pull request on GitHub. See [Pull requests](#pull-requests). |
 | Last commit | Subject, hash, author, and age. Click the subject to see the full commit message. |
 
 Click a row that has changes to expand it. The expanded row lists the changed files in groups: **Conflicts**, **Staged**, **Not staged**, and **Untracked**. Each file shows lines added and removed.
@@ -56,6 +57,16 @@ Click a row that has changes to expand it. The expanded row lists the changed fi
   | Conflicts | Not available. Resolve conflicts in your editor. |
 
   Before it discards, Git Viewer copies the file to `~/.git-viewer/discarded/`. The message that confirms the discard has an **Undo** button for 12 seconds. Undo puts the content back as an unstaged change. Backups are deleted after 7 days.
+
+## Pull requests
+
+For repositories whose `origin` is on GitHub, the Worktrees and Local branches tabs show each branch's pull request:
+
+- The number links to the pull request. Its state is **Open**, **Draft**, **Merged**, or **Closed**. Hover over the number to see the title and the comment and review-thread counts.
+- For open pull requests, a second line shows the checks (**✓ checks**, **✗ N failing**, or **◷ N running**), the review decision (**approved**, **changes requested**, or **needs review**), and the number of unresolved review threads. Hover over **failing** to see which checks failed.
+- A pushed branch without a pull request shows **Create PR**, which opens GitHub's page for opening one.
+
+The data comes from the GitHub CLI, `gh`, with your `gh auth login`. Git Viewer stores no token. It asks GitHub at most once a minute per repository, plus when you click **Refresh**, **Fetch**, or **Push**. If `gh` isn't installed or isn't logged in, the column says so and the rest of the app works as usual.
 
 ## Commit and push
 

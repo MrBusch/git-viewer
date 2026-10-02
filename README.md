@@ -15,6 +15,7 @@ You need:
 - macOS or Linux.
 - [Node.js](https://nodejs.org/) 18 or later. Check with `node --version`.
 - git 2.31 or later. Check with `git --version`.
+- Optional: the [GitHub CLI](https://cli.github.com/) (`gh`), logged in with `gh auth login`. Git Viewer uses it to show each branch's pull request, checks, and reviews. Without it, everything else works.
 
 ## Set up git and GitHub access
 

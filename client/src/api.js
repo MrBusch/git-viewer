@@ -20,6 +20,7 @@ export const api = {
   repo: (name) => request('GET', repoUrl(name)),
   commit: (name, hash) => request('GET', `${repoUrl(name)}/commit/${encodeURIComponent(hash)}`),
   changes: (name, worktree) => request('GET', `${repoUrl(name)}/changes?worktree=${encodeURIComponent(worktree)}`),
+  prs: (name, fresh) => request('GET', `${repoUrl(name)}/prs${fresh ? '?fresh=1' : ''}`),
   suggestWorktreePath: (name, branch) => request('GET', `${repoUrl(name)}/suggest-worktree-path?branch=${encodeURIComponent(branch)}`),
   fetch: (name) => request('POST', `${repoUrl(name)}/fetch`, {}),
   switch: (name, worktree, branch) => request('POST', `${repoUrl(name)}/switch`, { worktree, branch }),

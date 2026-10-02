@@ -5,6 +5,7 @@ const path = require('path');
 const { git, worktreeStatus, mergedState, defaultBranch, commitDetail, worktreeChanges, discoverRepos, repoSummary, repoDetail, listWorktrees, localBranches, remoteBranches, isValidBranchName, mapLimit } = require('./git');
 
 const { commitFiles, pushBranch } = require('./commit');
+const { repoPullRequests } = require('./prs');
 const { fileDiff, discardChange, undoDiscard, pruneBackups } = require('./files');
 
 const { readConfig, addExtraRepo, removeExtraRepo, getMainLink, setMainLink } = require('./config');
@@ -240,6 +241,15 @@ app.post(
   wrap(async (req, res) => {
     const meta = undoDiscard(String(req.body.id || ''));
     res.json({ ok: true, message: `Restored ${meta.path}` });
+  })
+);
+
+// Pull requests for the repo's local branches, via the GitHub CLI. ?fresh=1 skips the one-minute cache.
+app.get(
+  '/api/repos/:name/prs',
+  wrap(async (req, res) => {
+    const repo = findRepo(req.params.name);
+    res.json(await repoPullRequests(repo.path, { fresh: req.query.fresh === '1' }));
   })
 );
 

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api.js';
 import { CopyButton, StatusChips, Toasts, UpstreamCell, useToasts } from './components.jsx';
 import { ChangedFiles, CommitCell } from './details.jsx';
+import { PrCell } from './prs.jsx';
 import { AddRepoDialog, BaseSync, CheckoutRemoteDialog, CleanupDialog, OpenBranchDialog, OpenInMainDialog, SwitchBranchDialog } from './dialogs.jsx';
 import { ThemeSwitch } from './theme.jsx';
 import { basename, fullDate, setHome, shortPath, timeAgo } from './util.js';
@@ -33,6 +34,7 @@ export default function App() {
   const [repos, setRepos] = useState(null);
   const [roots, setRoots] = useState([]);
   const [detail, setDetail] = useState(null);
+  const [prs, setPrs] = useState(null); // { repo, data } from the GitHub CLI, loaded separately (it's slower)
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(null);
@@ -62,6 +64,17 @@ export default function App() {
     []
   );
 
+  const loadPrs = useCallback(async (name, { fresh } = {}) => {
+    if (!name) return;
+    let data;
+    try {
+      data = await api.prs(name, fresh);
+    } catch (e) {
+      data = { status: 'unavailable', message: e.message };
+    }
+    if (selectedRef.current === name) setPrs({ repo: name, data });
+  }, []);
+
   useEffect(() => {
     loadRepos();
   }, [loadRepos]);
@@ -74,7 +87,8 @@ export default function App() {
   useEffect(() => {
     setDetail((d) => (d?.name === selected ? d : null));
     loadDetail(selected);
-  }, [selected, loadDetail]);
+    loadPrs(selected);
+  }, [selected, loadDetail, loadPrs]);
 
   // Refresh when coming back to the tab, and every 30s while it is visible.
   useEffect(() => {
@@ -82,6 +96,7 @@ export default function App() {
       if (document.visibilityState !== 'visible') return;
       loadRepos();
       loadDetail(selectedRef.current, { quiet: true });
+      loadPrs(selectedRef.current); // served from the server's one-minute cache
     };
     window.addEventListener('focus', refresh);
     const timer = setInterval(refresh, 30000);
@@ -89,7 +104,7 @@ export default function App() {
       window.removeEventListener('focus', refresh);
       clearInterval(timer);
     };
-  }, [loadRepos, loadDetail]);
+  }, [loadRepos, loadDetail, loadPrs]);
 
   // Run a git action, then show the result and reload.
   const run = useCallback(
@@ -113,9 +128,10 @@ export default function App() {
       } finally {
         setBusy(false);
         await Promise.all([loadDetail(selectedRef.current, { quiet: true }), loadRepos()]);
+        loadPrs(selectedRef.current, { fresh: true }); // a push or fetch changes PR state
       }
     },
-    [toast, loadDetail, loadRepos]
+    [toast, loadDetail, loadRepos, loadPrs]
   );
 
   const runRef = useRef(run);
@@ -138,7 +154,8 @@ export default function App() {
             setTab={(t) => navigate(detail.name, t)}
             run={run}
             busy={busy}
-            refresh={() => loadDetail(detail.name)}
+            refresh={() => (loadDetail(detail.name), loadPrs(detail.name, { fresh: true }))}
+            prs={prs?.repo === detail.name ? prs.data : null}
             openDialog={setDialog}
           />
         )}
@@ -199,7 +216,7 @@ function Sidebar({ repos, selected, onSelect, onAdd }) {
 
 // ─── Repo view ────────────────────────────────────────────────────────────────
 
-function RepoView({ repo, tab, setTab, run, busy, refresh, loading, openDialog }) {
+function RepoView({ repo, tab, setTab, run, busy, refresh, loading, openDialog, prs }) {
   const dirtyCount = repo.worktrees.filter((w) => w.status?.dirty).length;
   const tabs = [
     ['worktrees', 'Worktrees', repo.worktrees.length],
@@ -255,8 +272,9 @@ function RepoView({ repo, tab, setTab, run, busy, refresh, loading, openDialog }
         ))}
       </div>
 
-      {tab === 'worktrees' && <WorktreesTable repo={repo} run={run} busy={busy} openDialog={openDialog} />}
-      {tab === 'branches' && <LocalBranchesTable repo={repo} run={run} busy={busy} openDialog={openDialog} />}
+      {(tab === 'worktrees' || tab === 'branches') && prs?.status === 'unavailable' && <p className="pr-note dim small">{prs.message}</p>}
+      {tab === 'worktrees' && <WorktreesTable repo={repo} run={run} busy={busy} openDialog={openDialog} prs={prs} />}
+      {tab === 'branches' && <LocalBranchesTable repo={repo} run={run} busy={busy} openDialog={openDialog} prs={prs} />}
       {tab === 'remote' && <RemoteBranchesTable repo={repo} run={run} busy={busy} openDialog={openDialog} setTab={setTab} />}
     </div>
   );
@@ -372,7 +390,7 @@ function DetachedLabel({ wt, link }) {
 
 // ─── Worktrees ────────────────────────────────────────────────────────────────
 
-function WorktreesTable({ repo, run, busy, openDialog }) {
+function WorktreesTable({ repo, run, busy, openDialog, prs }) {
   const byName = useMemo(() => new Map(repo.localBranches.map((b) => [b.name, b])), [repo]);
   const [expanded, setExpanded] = useState(() => new Set());
   const toggle = (p) =>
@@ -390,6 +408,7 @@ function WorktreesTable({ repo, run, busy, openDialog }) {
             <th>Changes</th>
             <th>vs upstream</th>
             <th>vs {repo.defaultBranch || 'default'}</th>
+            {prs?.status !== 'no-github' && <th>Pull request</th>}
             <th>Last commit</th>
             <th />
           </tr>
@@ -420,6 +439,11 @@ function WorktreesTable({ repo, run, busy, openDialog }) {
                 </td>
                 <td>{b ? <UpstreamCell {...b} /> : <span className="dim">—</span>}</td>
                 <td>{b ? b.name === repo.defaultBranch ? <span className="dim">—</span> : <BaseSync base={b.base} defaultBranch={repo.defaultBranch} /> : '—'}</td>
+                {prs?.status !== 'no-github' && (
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <PrCell prs={prs} branch={b} isDefault={b?.name === repo.defaultBranch} />
+                  </td>
+                )}
                 <td className="commit-col">
                   <CommitCell commit={wt.lastCommit} repoName={repo.name} />
                 </td>
@@ -448,7 +472,7 @@ function WorktreesTable({ repo, run, busy, openDialog }) {
               </tr>
               {open && (
                 <tr className="expand-row">
-                  <td colSpan={6}>
+                  <td colSpan={prs?.status !== 'no-github' ? 7 : 6}>
                     <ChangedFiles repoName={repo.name} wt={wt} run={run} busy={busy} />
                   </td>
                 </tr>
@@ -464,7 +488,7 @@ function WorktreesTable({ repo, run, busy, openDialog }) {
 
 // ─── Local branches ───────────────────────────────────────────────────────────
 
-function LocalBranchesTable({ repo, run, busy, openDialog }) {
+function LocalBranchesTable({ repo, run, busy, openDialog, prs }) {
   const [query, setQuery] = useState('');
   const branches = repo.localBranches.filter((b) => b.name.toLowerCase().includes(query.toLowerCase()));
   return (
@@ -479,6 +503,7 @@ function LocalBranchesTable({ repo, run, busy, openDialog }) {
               <th>Branch</th>
               <th>vs upstream</th>
               <th>vs {repo.defaultBranch || 'default'}</th>
+              {prs?.status !== 'no-github' && <th>Pull request</th>}
               <th>Last commit</th>
               <th />
             </tr>
@@ -498,6 +523,11 @@ function LocalBranchesTable({ repo, run, busy, openDialog }) {
                     <UpstreamCell {...b} />
                   </td>
                   <td>{b.name === repo.defaultBranch ? <span className="chip chip-muted">default</span> : <BaseSync base={b.base} defaultBranch={repo.defaultBranch} />}</td>
+                  {prs?.status !== 'no-github' && (
+                    <td>
+                      <PrCell prs={prs} branch={b} isDefault={b.name === repo.defaultBranch} />
+                    </td>
+                  )}
                   <td className="commit-col">
                     <CommitCell commit={b.lastCommit} repoName={repo.name} />
                   </td>
@@ -534,7 +564,7 @@ function LocalBranchesTable({ repo, run, busy, openDialog }) {
             })}
             {!branches.length && (
               <tr>
-                <td colSpan={5} className="dim empty">
+                <td colSpan={prs?.status !== 'no-github' ? 6 : 5} className="dim empty">
                   No matching branches
                 </td>
               </tr>
